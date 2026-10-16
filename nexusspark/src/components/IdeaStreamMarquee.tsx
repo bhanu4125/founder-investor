@@ -8,6 +8,8 @@ import {
   FounderIdea,
   InvestorProfile,
 } from "@/lib/data";
+import { useLiveIdeaStream } from "@/hooks/useLiveIdeaStream";
+import { useRequestCollab } from "@/hooks/useRequestCollab";
 import {
   Zap,
   Check,
@@ -102,31 +104,44 @@ function TiltCard({
 function FounderCard({
   idea,
   onSelect,
+  onRequestCollab,
+  isRequested = false,
 }: {
   idea: FounderIdea;
   onSelect: () => void;
+  onRequestCollab?: (pitchId: string, eventPos: { x: number; y: number }) => void;
+  isRequested?: boolean;
 }) {
-  const [requested, setRequested] = useState(false);
+  const [localRequested, setLocalRequested] = useState(false);
   const [hovered, setHovered] = useState(false);
+
+  const requested = isRequested || localRequested;
 
   const handleRequestCollab = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (requested) return;
 
-    setRequested(true);
+    setLocalRequested(true);
     const rect = e.currentTarget.getBoundingClientRect();
-    confetti({
-      particleCount: 40,
-      spread: 60,
-      origin: {
-        x: (rect.left + rect.width / 2) / window.innerWidth,
-        y: (rect.top + rect.height / 2) / window.innerHeight,
-      },
-      colors: ["#FF5A36", "#FB923C", "#111110", "#FAF8F5"],
-      ticks: 120,
-    });
+    const eventPos = {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
 
-    onSelect();
+    if (onRequestCollab) {
+      onRequestCollab(idea.id, eventPos);
+    } else {
+      confetti({
+        particleCount: 40,
+        spread: 60,
+        origin: {
+          x: eventPos.x / window.innerWidth,
+          y: eventPos.y / window.innerHeight,
+        },
+        colors: ["#FF5A36", "#FB923C", "#111110", "#FAF8F5"],
+        ticks: 120,
+      });
+    }
   };
 
   const width = 160;
@@ -435,7 +450,10 @@ export default function IdeaStreamMarquee({
   onSelectIdea,
   onSelectInvestor,
 }: IdeaStreamMarqueeProps) {
-  const founderIdeasLoop = [...FOUNDER_IDEAS, ...FOUNDER_IDEAS, ...FOUNDER_IDEAS];
+  const { ideas, isLiveConnected } = useLiveIdeaStream();
+  const { requestCollab, collabStatus } = useRequestCollab();
+
+  const founderIdeasLoop = [...ideas, ...ideas, ...ideas];
   const investorsLoop = [...INVESTORS, ...INVESTORS, ...INVESTORS];
 
   return (
@@ -445,6 +463,12 @@ export default function IdeaStreamMarquee({
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F3F1EC] border border-[#E2DFD7] text-xs font-semibold text-[#111110] mb-3">
           <Flame className="w-3.5 h-3.5 text-[#FF5A36]" />
           <span>Real-time Stream &bull; Hover to Pause & Tilt</span>
+          {isLiveConnected && (
+            <span className="flex items-center gap-1 text-[10px] text-[#10B981] font-mono font-bold ml-1.5 pl-1.5 border-l border-[#E2DFD7]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-ping" />
+              Live
+            </span>
+          )}
         </div>
         <h2 className="text-3xl sm:text-5xl font-bold tracking-[-0.03em] text-[#111110]">
           The <span className="text-founder-gradient">Live Idea</span> &amp;{" "}
@@ -467,6 +491,8 @@ export default function IdeaStreamMarquee({
               key={`founder-${idea.id}-${idx}`}
               idea={idea}
               onSelect={() => onSelectIdea(idea)}
+              onRequestCollab={(id, pos) => requestCollab({ pitchId: id, eventPosition: pos })}
+              isRequested={Boolean(collabStatus[idea.id])}
             />
           ))}
         </div>

@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ShieldCheck, Gem, CheckCircle2 } from "lucide-react";
 import confetti from "canvas-confetti";
 
+import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
+
 interface InvestorModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -26,7 +28,7 @@ export default function InvestorModal({ isOpen, onClose }: InvestorModalProps) {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
     confetti({
@@ -35,6 +37,21 @@ export default function InvestorModal({ isOpen, onClose }: InvestorModalProps) {
       origin: { y: 0.6 },
       colors: ["#111110", "#FF5A36", "#10B981", "#E6E4DD"],
     });
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: user } = await supabase.auth.getUser();
+        if (user?.user) {
+          await (supabase as any).from("profiles").update({
+            target_sectors: selectedSectors,
+            min_check_size: ticketSize.includes("$50K") ? 50000 : 250000,
+            max_check_size: ticketSize.includes("$5M") ? 5000000 : 1000000,
+          }).eq("id", user.user.id);
+        }
+      } catch (err) {
+        console.warn("Investor profile update notice:", err);
+      }
+    }
 
     setTimeout(() => {
       setSubmitted(false);

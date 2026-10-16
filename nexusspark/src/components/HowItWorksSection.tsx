@@ -8,6 +8,7 @@ import {
   CheckCircle,
   Zap,
 } from "lucide-react";
+import { useSynergyRoomRealtime } from "@/hooks/useSynergyRoomRealtime";
 
 export default function HowItWorksSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -34,9 +35,8 @@ export default function HowItWorksSection() {
     return () => clearInterval(interval);
   }, []);
 
-  // Step 3: Interactive Cap-Table & Milestone Slider State
-  const [equitySlider, setEquitySlider] = useState(8.5);
-  const valuation = (2.5 / (equitySlider / 100)).toFixed(1);
+  // Step 3: Supabase Realtime Broadcast & Postgres-Synced Cap Table
+  const { capTable, updateCapTable, isSyncing, peersCount } = useSynergyRoomRealtime();
 
   return (
     <section
@@ -409,20 +409,28 @@ export default function HowItWorksSection() {
                   </div>
                 </div>
 
-                <span className="text-[10px] font-mono text-[#10B981] bg-[#10B981]/10 px-2.5 py-1 rounded-full border border-[#10B981]/20 font-semibold">
-                  Room Active
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono text-[#10B981] bg-[#10B981]/10 px-2.5 py-1 rounded-full border border-[#10B981]/20 font-semibold flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                    <span>Synergy Active &bull; {peersCount} Peers Synced</span>
+                  </span>
+                </div>
               </div>
 
-              {/* Interactive Cap-Table Dilution Slider */}
+              {/* Interactive Cap-Table Dilution Slider (Supabase Realtime Broadcast) */}
               <div className="mb-5 p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E6E4DD]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-semibold text-[#111110] flex items-center gap-1.5">
                     <Sliders className="w-3.5 h-3.5 text-[#686763]" />
                     Interactive SAFE Cap-Table Slider
+                    {isSyncing && (
+                      <span className="text-[9px] font-mono font-bold text-[#10B981] animate-pulse ml-1">
+                        &lt;50ms Realtime
+                      </span>
+                    )}
                   </span>
                   <span className="text-xs font-mono font-semibold text-[#10B981]">
-                    {equitySlider.toFixed(1)}% Equity
+                    {capTable.equityPercentage.toFixed(1)}% Equity
                   </span>
                 </div>
 
@@ -431,14 +439,16 @@ export default function HowItWorksSection() {
                   min="3.0"
                   max="15.0"
                   step="0.5"
-                  value={equitySlider}
-                  onChange={(e) => setEquitySlider(parseFloat(e.target.value))}
+                  value={capTable.equityPercentage}
+                  onChange={(e) => updateCapTable(parseFloat(e.target.value))}
                   className="w-full accent-[#111110] cursor-pointer h-1.5 bg-[#E6E4DD] rounded-lg"
                 />
 
                 <div className="flex items-center justify-between mt-2.5 text-[11px] font-mono text-[#686763]">
                   <span>Investment: $2.5M Check</span>
-                  <span className="text-[#111110] font-semibold">Implied Post: ${valuation}M</span>
+                  <span className="text-[#111110] font-semibold">
+                    Implied Post: ${capTable.postMoneyValuation}M
+                  </span>
                 </div>
               </div>
 

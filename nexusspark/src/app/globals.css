@@ -38,10 +38,12 @@
     letter-spacing: -0.015em;
   }
 
-  @media (pointer: fine) {
-    *, *::before, *::after {
-      cursor: none !important;
-    }
+  /* Ensure proper, responsive native cursor feedback across all interactive and form elements */
+  button, a, select, [role="button"] {
+    cursor: pointer;
+  }
+  input, textarea {
+    cursor: text;
   }
 
   /* Custom Editorial Scrollbar */

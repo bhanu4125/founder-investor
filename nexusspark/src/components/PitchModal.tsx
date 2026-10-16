@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, Rocket, CheckCircle2, Code2 } from "lucide-react";
 import confetti from "canvas-confetti";
 
+import { useLiveIdeaStream } from "@/hooks/useLiveIdeaStream";
+
 interface PitchModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -12,6 +14,7 @@ interface PitchModalProps {
 
 export default function PitchModal({ isOpen, onClose }: PitchModalProps) {
   const [submitted, setSubmitted] = useState(false);
+  const { createNewPitch } = useLiveIdeaStream();
   const [formData, setFormData] = useState({
     startupName: "",
     thesis: "",
@@ -21,7 +24,7 @@ export default function PitchModal({ isOpen, onClose }: PitchModalProps) {
     githubRepo: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
     confetti({
@@ -30,6 +33,20 @@ export default function PitchModal({ isOpen, onClose }: PitchModalProps) {
       origin: { y: 0.6 },
       colors: ["#111110", "#FF5A36", "#10B981", "#E6E4DD"],
     });
+
+    try {
+      const askNum = parseFloat(formData.targetRaise.replace(/[^0-9.]/g, "")) || 1500000;
+      const eqNum = parseFloat(formData.equity.replace(/[^0-9.]/g, "")) || 8.0;
+      await createNewPitch({
+        title: formData.startupName,
+        tagline: formData.thesis,
+        solution: formData.thesis,
+        funding_ask: askNum,
+        equity_offered: eqNum,
+      });
+    } catch (err) {
+      console.warn("Pitch submit notice:", err);
+    }
 
     setTimeout(() => {
       setSubmitted(false);

@@ -10,6 +10,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import confetti from "canvas-confetti";
+import { useLiveIdeaStream } from "@/hooks/useLiveIdeaStream";
 
 interface LaunchpadFooterProps {
   onOpenPitchModal: () => void;
@@ -22,6 +23,7 @@ export default function LaunchpadFooter({
 }: LaunchpadFooterProps) {
   const [ideaInput, setIdeaInput] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const { createNewPitch } = useLiveIdeaStream();
 
   const inputLen = ideaInput.length;
   const gravitationFactor = Math.min(inputLen / 40, 1);
@@ -32,7 +34,7 @@ export default function LaunchpadFooter({
       : "$1.5M - $4.0M";
   const syndicateMatches = Math.min(Math.floor(inputLen / 6) + 2, 14);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ideaInput.trim()) return;
 
@@ -43,6 +45,18 @@ export default function LaunchpadFooter({
       origin: { y: 0.8 },
       colors: ["#111110", "#FF5A36", "#10B981", "#E6E4DD"],
     });
+
+    try {
+      await createNewPitch({
+        title: ideaInput.slice(0, 32),
+        tagline: ideaInput,
+        solution: ideaInput,
+        funding_ask: 2000000,
+        equity_offered: 8.0,
+      });
+    } catch (err) {
+      console.warn("Launchpad pitch notice:", err);
+    }
 
     setTimeout(() => {
       onOpenPitchModal();
